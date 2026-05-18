@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowCare — نظام الفرز الذكي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07090f;
+  --s1: #0d1117;
+  --s2: #131923;
+  --s3: #1a2333;
+  --border: #1e2d45;
+  --border2: #243350;
+  --text: #dce8f5;
+  --muted: #5a7499;
+  --dim: #2d3f58;
+  --accent: #2d7dd2;
+  --accent2: #1a5fa8;
+  --r: #e53e3e; --r-bg: #1a0808; --r-soft: rgba(229,62,62,0.12);
+  --o: #d97706; --o-bg: #1a1008; --o-soft: rgba(217,119,6,0.12);
+  --y: #eab308; --y-bg: #1a1600; --y-soft: rgba(234,179,8,0.1);
+  --g: #16a34a; --g-bg: #071510; --g-soft: rgba(22,163,74,0.12);
+  --b: #2563eb; --b-bg: #080f22; --b-soft: rgba(37,99,235,0.12);
+  --font: 'IBM Plex Sans Arabic', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* grid bg */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(45,125,210,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(45,125,210,0.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:200;background:rgba(7,9,15,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{width:34px;height:34px;background:linear-gradient(135deg,#1a5fa8,#2d7dd2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 16px rgba(45,125,210,0.35)}
+.logo-name{font-size:17px;font-weight:700;letter-spacing:-0.3px}
+.logo-tagline{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.header-meta{display:flex;align-items:center;gap:16px}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--g);background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.2);padding:4px 10px;border-radius:20px;letter-spacing:0.5px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--g);box-shadow:0 0 6px var(--g);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.clock{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:1px}
+
+/* LAYOUT */
+.app{position:relative;z-index:1;display:grid;grid-template-columns:420px 1fr;min-height:calc(100vh - 60px)}
+
+/* LEFT PANEL */
+.left-panel{border-left:1px solid var(--border);background:var(--s1);display:flex;flex-direction:column;height:calc(100vh - 60px);position:sticky;top:60px;overflow-y:auto}
+.left-panel::-webkit-scrollbar{width:3px}
+.left-panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* STEPS */
+.step-header{padding:20px 24px 16px;border-bottom:1px solid var(--border)}
+.step-indicator{display:flex;align-items:center;gap:0;margin-bottom:14px}
+.step-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);transition:all 0.3s;flex-shrink:0;position:relative;z-index:1}
+.step-dot.active{border-color:var(--accent);background:var(--accent);color:#fff;box-shadow:0 0 12px rgba(45,125,210,0.4)}
+.step-dot.done{border-color:var(--g);background:var(--g-bg);color:var(--g)}
+.step-line{flex:1;height:2px;background:var(--border);margin:0 4px;transition:background 0.3s}
+.step-line.done{background:var(--g)}
+.step-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px}
+.step-subtitle{font-size:12px;color:var(--dim);margin-top:3px}
+
+/* STEP PANELS */
+.step-panel{display:none;padding:20px 24px;flex:1;flex-direction:column;gap:16px}
+.step-panel.active{display:flex}
+
+/* FORM ELEMENTS */
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+input,select{background:var(--s2);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-family:var(--font);font-size:14px;padding:11px 14px;outline:none;width:100%;transition:border-color 0.2s,box-shadow 0.2s;-webkit-appearance:none}
+input::placeholder{color:var(--dim)}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,125,210,0.1)}
+select option{background:var(--s2)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* SYMPTOM GRID */
+.symptom-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sym-btn{padding:12px 10px;border-radius:10px;border:1px solid var(--border2);background:var(--s2);color:var(--muted);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all 0.18s;display:flex;flex-direction:column;align-items:center;gap:5px;line-height:1.3}
+.sym-btn .sym-icon{font-size:20px}
+.sym-btn:hover{background:var(--s3);color:var(--text);border-color:var(--border2)}
+.sym-btn.selected{border-color:var(--accent);background:var(--b-soft);color:#7eb8f5}
+
+/* VITALS SECTION */
+.vitals-toggle{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--s2);cursor:pointer;transition:all 0.2s}
+.vitals-toggle:hover{border-color:var(--accent)}
+.toggle-check{width:18px;height:18px;border-radius:5px;border:2px solid var(--border2);background:var(--bg);display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0}
+.toggle-check.on{background:var(--accent);border-color:var(--accent)}
+.vitals-fields{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.vitals-fields.open{display:grid}
+.vital-input{background:var(--s2);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:8px}
+.vital-input input{background:transparent;border:none;padding:0;font-size:14px;width:60px}
+.vital-input input:focus{box-shadow:none;border:none}
+.vital-unit{font-size:11px;color:var(--muted)}
+
+/* QUESTIONS */
+.question-card{background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:18px}
+.q-text{font-size:14px;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.6}
+.q-options{display:flex;flex-direction:column;gap:8px}
+.q-opt{padding:11px 14px;border-radius:9px;border:1px solid var(--border2);background:var(--bg);color:var(--muted);font-family:var(--font);font-size:13px;cursor:pointer;text-align:right;transition:all 0.18s}
+.q-opt:hover{background:var(--s3);color:var(--text);border-color:var(--accent)}
+.q-opt.selected{border-color:var(--accent);background:var(--b-soft);color:#7eb8f5}
+.q-progress{display:flex;gap:4px;margin-bottom:14px}
+.q-prog-dot{height:3px;flex:1;border-radius:3px;background:var(--border);transition:background 0.3s}
+.q-prog-dot.done{background:var(--accent)}
+.q-prog-dot.active{background:rgba(45,125,210,0.5)}
+
+/* RESULT CARD */
+.result-card{border-radius:14px;padding:20px;border:2px solid;animation:result-in 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes result-in{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+.result-card.er{border-color:var(--r);background:var(--r-bg)}
+.result-card.p2{border-color:var(--o);background:var(--o-bg)}
+.result-card.p3{border-color:var(--y);background:var(--y-bg)}
+.result-card.p4{border-color:var(--accent);background:var(--b-bg)}
+.result-card.p5{border-color:var(--g);background:var(--g-bg)}
+.result-level{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.result-specialty{font-size:22px;font-weight:700;margin-bottom:6px;line-height:1.2}
+.result-wait{font-size:13px;margin-bottom:12px}
+.result-reason{font-size:12px;color:var(--muted);background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 12px;line-height:1.6}
+.result-card.er .result-level{color:var(--r)}
+.result-card.er .result-specialty{color:#ff8080}
+.result-card.p2 .result-level{color:var(--o)}
+.result-card.p2 .result-specialty{color:#fcd34d}
+.result-card.p3 .result-level{color:var(--y)}
+.result-card.p3 .result-specialty{color:#fde68a}
+.result-card.p4 .result-level{color:var(--accent)}
+.result-card.p4 .result-specialty{color:#93c5fd}
+.result-card.p5 .result-level{color:var(--g)}
+.result-card.p5 .result-specialty{color:#86efac}
+
+.er-warning{background:rgba(229,62,62,0.08);border:1px solid rgba(229,62,62,0.3);border-radius:10px;padding:14px;display:flex;gap:10px;align-items:flex-start;margin-top:4px}
+.er-warning-text{font-size:13px;color:#ff8080;font-weight:600;line-height:1.5}
+
+/* NAV BUTTONS */
+.nav-row{display:flex;gap:10px;padding:16px 24px;border-top:1px solid var(--border);background:var(--s1);position:sticky;bottom:0}
+.btn{padding:11px 20px;border-radius:10px;border:none;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px}
+.btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;flex:1;box-shadow:0 4px 16px rgba(45,125,210,0.25)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(45,125,210,0.4)}
+.btn-primary:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--s2);border:1px solid var(--border2);color:var(--muted)}
+.btn-secondary:hover{background:var(--s3);color:var(--text)}
+.btn-confirm{background:linear-gradient(135deg,#15803d,#16a34a);color:#fff;flex:1;box-shadow:0 4px 16px rgba(22,163,74,0.2)}
+.btn-confirm:hover{transform:translateY(-1px)}
+.btn-er{background:linear-gradient(135deg,#991b1b,#e53e3e);color:#fff;flex:1;animation:er-pulse 1.5s infinite}
+@keyframes er-pulse{0%,100%{box-shadow:0 4px 16px rgba(229,62,62,0.3)}50%{box-shadow:0 4px 28px rgba(229,62,62,0.6)}}
+
+/* RIGHT PANEL */
+.right-panel{padding:24px;overflow-y:auto}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px}
+.stat-box{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center;position:relative;overflow:hidden;transition:border-color 0.2s}
+.stat-box::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity 0.3s}
+.stat-box.s-er::before{background:var(--r-soft)}
+.stat-box.s-p2::before{background:var(--o-soft)}
+.stat-box.s-p3::before{background:var(--y-soft)}
+.stat-box.s-p4::before{background:var(--b-soft)}
+.stat-box.s-p5::before{background:var(--g-soft)}
+.stat-box.has-data::before{opacity:1}
+.stat-num{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1;margin-bottom:4px;position:relative;z-index:1}
+.stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;position:relative;z-index:1}
+.stat-box.s-er .stat-num{color:var(--r)}
+.stat-box.s-p2 .stat-num{color:var(--o)}
+.stat-box.s-p3 .stat-num{color:var(--y)}
+.stat-box.s-p4 .stat-num{color:var(--accent)}
+.stat-box.s-p5 .stat-num{color:var(--g)}
+
+/* CRITICAL BANNER */
+.critical-banner{display:none;background:var(--r-bg);border:1px solid var(--r);border-radius:12px;padding:14px 18px;margin-bottom:16px;align-items:center;gap:12px;animation:flash-border 1.5s infinite}
+@keyframes flash-border{0%,100%{border-color:var(--r)}50%{border-color:#ff4444;box-shadow:0 0 20px rgba(229,62,62,0.25)}}
+.critical-banner.show{display:flex}
+.cb-icon{font-size:22px;flex-shrink:0}
+.cb-text{font-size:13px;font-weight:600;color:#ff8080}
+
+/* FILTER */
+.filter-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:all 0.18s;text-transform:uppercase}
+.filter-btn.active{background:var(--b-soft);border-color:rgba(45,125,210,0.4);color:#7eb8f5}
+.filter-btn:hover:not(.active){background:var(--s2);color:var(--text)}
+
+/* QUEUE */
+.queue{display:flex;flex-direction:column;gap:10px}
+.p-card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden;display:grid;grid-template-columns:auto 1fr auto;transition:all 0.2s;animation:card-in 0.3s ease forwards;position:relative}
+@keyframes card-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.p-card:hover{transform:translateX(-2px);border-color:var(--border2)}
+.p-card.done-card{opacity:0.4}
+
+/* Level stripe */
+.p-stripe{width:5px;flex-shrink:0}
+.stripe-er{background:var(--r);box-shadow:2px 0 8px rgba(229,62,62,0.3)}
+.stripe-p2{background:var(--o)}
+.stripe-p3{background:var(--y)}
+.stripe-p4{background:var(--accent)}
+.stripe-p5{background:var(--g)}
+.stripe-done{background:var(--dim)}
+
+.p-body{padding:14px 16px;min-width:0}
+.p-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.p-name{font-size:15px;font-weight:700;color:var(--text)}
+.p-num{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--s2);border:1px solid var(--border);padding:2px 8px;border-radius:5px}
+.p-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;letter-spacing:0.5px;text-transform:uppercase;border:1px solid}
+.badge-er{background:var(--r-bg);color:var(--r);border-color:rgba(229,62,62,0.3)}
+.badge-p2{background:var(--o-bg);color:var(--o);border-color:rgba(217,119,6,0.3)}
+.badge-p3{background:var(--y-bg);color:var(--y);border-color:rgba(234,179,8,0.3)}
+.badge-p4{background:var(--b-bg);color:var(--accent);border-color:rgba(37,99,235,0.3)}
+.badge-p5{background:var(--g-bg);color:var(--g);border-color:rgba(22,163,74,0.3)}
+.badge-done{background:var(--s2);color:var(--dim);border-color:var(--border)}
+
+.p-specialty{font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px}
+.p-meta{display:flex;gap:6px;flex-wrap:wrap}
+.meta-tag{font-size:11px;padding:2px 8px;border-radius:5px;background:rgba(255,255,255,0.03);color:var(--muted);border:1px solid var(--border)}
+.complaint-tag{font-size:11px;padding:2px 8px;border-radius:5px;background:rgba(45,125,210,0.06);color:#5a8fd4;border:1px solid rgba(45,125,210,0.15)}
+
+.p-actions{padding:14px 16px;display:flex;flex-direction:column;gap:6px;align-items:flex-end;justify-content:center;flex-shrink:0}
+.wait-display{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center;margin-bottom:4px}
+.wait-display span{display:block;font-size:9px;color:var(--dim);margin-bottom:1px}
+.act-btn{padding:6px 12px;border-radius:7px;border:1px solid;font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;transition:all 0.18s;white-space:nowrap}
+.btn-call{border-color:rgba(45,125,210,0.4);background:var(--b-soft);color:#7eb8f5}
+.btn-call:hover{background:rgba(45,125,210,0.2)}
+.btn-done{border-color:rgba(22,163,74,0.4);background:var(--g-soft);color:#86efac}
+.btn-done:hover{background:rgba(22,163,74,0.2)}
+.btn-undo{border-color:var(--border2);background:transparent;color:var(--muted)}
+.btn-undo:hover{background:var(--s2);color:var(--text)}
+
+/* CALLED POPUP */
+.called-popup{position:fixed;top:76px;right:24px;background:var(--s1);border:1px solid var(--accent);border-radius:16px;padding:18px 22px;min-width:200px;z-index:300;display:none;animation:pop-in 0.35s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 8px 32px rgba(45,125,210,0.2)}
+.called-popup.show{display:block}
+@keyframes pop-in{from{opacity:0;transform:scale(0.8) translateY(-8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.cp-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.cp-name{font-size:17px;font-weight:700;color:var(--text);margin-bottom:2px}
+.cp-specialty{font-size:12px;color:var(--accent);margin-bottom:4px}
+.cp-num{font-family:var(--mono);font-size:30px;color:var(--accent);font-weight:600}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:var(--dim)}
+.empty-icon{font-size:44px;opacity:0.3;margin-bottom:12px}
+.empty p{font-size:14px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:11px 20px;font-size:13px;font-weight:600;z-index:999;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 8px 28px rgba(0,0,0,0.4);white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.t-ok{border-color:rgba(22,163,74,0.4);color:#86efac}
+.toast.t-err{border-color:rgba(229,62,62,0.4);color:#ff8080}
+.toast.t-warn{border-color:rgba(217,119,6,0.4);color:#fcd34d}
+
+@media(max-width:900px){.app{grid-template-columns:1fr}.left-panel{position:static;height:auto}.stats-row{grid-template-columns:repeat(3,1fr)}.called-popup{display:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">🏥</div>
+    <div>
+      <div class="logo-name">FlowCare</div>
+      <div class="logo-tagline">نظام الفرز الذكي — العيادات الخارجية</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="live-badge"><div class="live-dot"></div>نظام نشط</div>
+    <div class="clock" id="clock">--:--</div>
+  </div>
+</header>
+
+<div class="app">
+  <!-- ═══════════════ LEFT PANEL ═══════════════ -->
+  <div class="left-panel">
+
+    <div class="step-header">
+      <div class="step-indicator">
+        <div class="step-dot active" id="sd1">١</div>
+        <div class="step-line" id="sl1"></div>
+        <div class="step-dot" id="sd2">٢</div>
+        <div class="step-line" id="sl2"></div>
+        <div class="step-dot" id="sd3">٣</div>
+        <div class="step-line" id="sl3"></div>
+        <div class="step-dot" id="sd4">٤</div>
+      </div>
+      <div class="step-title" id="stepTitle">بيانات المريض</div>
+      <div class="step-subtitle" id="stepSub">أدخل المعلومات الأساسية</div>
+    </div>
+
+    <!-- STEP 1: Patient Info -->
+    <div class="step-panel active" id="step1">
+      <div class="field">
+        <label>الاسم الكامل</label>
+        <input type="text" id="pName" placeholder="اسم المريض">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>العمر</label>
+          <input type="number" id="pAge" placeholder="سنة" min="0" max="120">
+        </div>
+        <div class="field">
+          <label>الجنس</label>
+          <select id="pGender">
+            <option value="">—</option>
+            <option value="ذكر">ذكر</option>
+            <option value="أنثى">أنثى</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>رقم الهاتف</label>
+        <input type="text" id="pPhone" placeholder="اختياري">
+      </div>
+    </div>
+
+    <!-- STEP 2: Chief Complaint -->
+    <div class="step-panel" id="step2">
+      <div class="field">
+        <label>الشكوى الرئيسية — اختر الأقرب</label>
+        <div class="symptom-grid" id="symptomGrid">
+          <div class="sym-btn" onclick="selectSymptom('abdominal',this)"><span class="sym-icon">🫃</span>ألم في البطن</div>
+          <div class="sym-btn" onclick="selectSymptom('joint',this)"><span class="sym-icon">🦴</span>ألم المفاصل</div>
+          <div class="sym-btn" onclick="selectSymptom('limb',this)"><span class="sym-icon">💪</span>ضعف أو تنميل الأطراف</div>
+          <div class="sym-btn" onclick="selectSymptom('syncope',this)"><span class="sym-icon">😵</span>إغماء أو دوار</div>
+          <div class="sym-btn" onclick="selectSymptom('headache',this)"><span class="sym-icon">🤕</span>صداع</div>
+          <div class="sym-btn" onclick="selectSymptom('chest',this)"><span class="sym-icon">💔</span>ألم في الصدر</div>
+          <div class="sym-btn" onclick="selectSymptom('rash',this)"><span class="sym-icon">🔴</span>طفح جلدي</div>
+          <div class="sym-btn" onclick="selectSymptom('neck',this)"><span class="sym-icon">🫀</span>تورم الرقبة / نمو</div>
+          <div class="sym-btn" onclick="selectSymptom('dm_htn',this)"><span class="sym-icon">💊</span>سكري / ضغط — متابعة</div>
+          <div class="sym-btn" onclick="selectSymptom('fatigue',this)"><span class="sym-icon">😴</span>إرهاق / تغير الوزن</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Smart Questions -->
+    <div class="step-panel" id="step3">
+      <div class="q-progress" id="qProgress"></div>
+      <div class="question-card" id="questionCard">
+        <div class="q-text" id="qText">—</div>
+        <div class="q-options" id="qOptions"></div>
+      </div>
+      <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:-4px">الأسئلة تُحدد التخصص والأولوية تلقائياً</div>
+    </div>
+
+    <!-- STEP 4: Vitals + Result -->
+    <div class="step-panel" id="step4">
+      <div class="vitals-toggle" id="vitalsToggle" onclick="toggleVitals()">
+        <div class="toggle-check" id="vtCheck"></div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">إضافة العلامات الحيوية</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">تُحسّن دقة الأولوية تلقائياً</div>
+        </div>
+      </div>
+      <div class="vitals-fields" id="vitalsFields">
+        <div class="vital-input">
+          <span style="font-size:16px">❤️</span>
+          <input type="number" id="vHR" placeholder="—">
+          <span class="vital-unit">نبض/د</span>
+        </div>
+        <div class="vital-input">
+          <span style="font-size:16px">🩸</span>
+          <input type="number" id="vSBP" placeholder="—">
+          <span class="vital-unit">ضغط انقباضي</span>
+        </div>
+        <div class="vital-input">
+          <span style="font-size:16px">🌡️</span>
+          <input type="number" id="vTemp" placeholder="—" step="0.1">
+          <span class="vital-unit">°م</span>
+        </div>
+        <div class="vital-input">
+          <span style="font-size:16px">🫁</span>
+          <input type="number" id="vO2" placeholder="—">
+          <span class="vital-unit">SpO₂ %</span>
+        </div>
+      </div>
+      <div id="resultArea"></div>
+    </div>
+
+    <!-- NAV -->
+    <div class="nav-row" id="navRow">
+      <button class="btn btn-secondary" id="btnBack" onclick="goBack()" style="display:none">→ رجوع</button>
+      <button class="btn btn-primary" id="btnNext" onclick="goNext()">التالي ←</button>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ RIGHT PANEL ═══════════════ -->
+  <div class="right-panel">
+
+    <div class="stats-row">
+      <div class="stat-box s-er" id="boxER"><div class="stat-num" id="nER">0</div><div class="stat-lbl">إسعاف</div></div>
+      <div class="stat-box s-p2" id="boxP2"><div class="stat-num" id="nP2">0</div><div class="stat-lbl">حرج</div></div>
+      <div class="stat-box s-p3" id="boxP3"><div class="stat-num" id="nP3">0</div><div class="stat-lbl">عاجل</div></div>
+      <div class="stat-box s-p4" id="boxP4"><div class="stat-num" id="nP4">0</div><div class="stat-lbl">متوسط</div></div>
+      <div class="stat-box s-p5" id="boxP5"><div class="stat-num" id="nP5">0</div><div class="stat-lbl">روتيني</div></div>
+    </div>
+
+    <div class="critical-banner" id="critBanner">
+      <div class="cb-icon">🚨</div>
+      <div class="cb-text" id="critText">يوجد مريض يحتاج إسعاف فوري — يرجى التصرف الآن</div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">قائمة الانتظار</div>
+      <div style="font-size:11px;color:var(--muted)" id="totalCount">٠ مريض</div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="setFilter('all',this)">الكل</button>
+      <button class="filter-btn" onclick="setFilter('er',this)">🔴 إسعاف</button>
+      <button class="filter-btn" onclick="setFilter('p2',this)">🟠 حرج</button>
+      <button class="filter-btn" onclick="setFilter('p3',this)">🟡 عاجل</button>
+      <button class="filter-btn" onclick="setFilter('p4',this)">🔵 متوسط</button>
+      <button class="filter-btn" onclick="setFilter('p5',this)">🟢 روتيني</button>
+      <button class="filter-btn" onclick="setFilter('done',this)">✅ انتهى</button>
+    </div>
+
+    <div class="queue" id="queue">
+      <div class="empty" id="emptyState"><div class="empty-icon">📋</div><p>لا يوجد مرضى في قائمة الانتظار</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- CALLED POPUP -->
+<div class="called-popup" id="calledPopup">
+  <div class="cp-label">⚡ تم الاستدعاء</div>
+  <div class="cp-name" id="cpName">—</div>
+  <div class="cp-specialty" id="cpSpecialty">—</div>
+  <div class="cp-num" id="cpNum">#—</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  TRIAGE ENGINE — based on STS + GPT4 + Gemini
+// ═══════════════════════════════════════════════
+
+const QUESTIONS = {
+  abdominal: [
+    { id:'age14', q:'هل المريض أقل من 14 سنة؟', opts:['نعم','لا'] },
+    { id:'female_fertile', q:'هل المريضة في سن الإنجاب مع ألم بطن سفلي أو حوضي؟', opts:['نعم','لا'], cond:(a,g)=>g==='أنثى' },
+    { id:'acute_abdomen', q:'هل الألم حاد ومفاجئ مع صلابة البطن أو ارتداد الألم أو حمى عالية؟', opts:['نعم','لا'] },
+    { id:'location', q:'أين موقع الألم بالضبط؟', opts:['يمين أسفل (زائدة)','يمين أعلى (كبد/مرارة)','شرسوفي (معدة)','خاصرة/ظهر','منتشر'] },
+    { id:'chronic', q:'هل الألم مزمن ومتكرر مرتبط بالأكل أو تغير عادة التبرز؟', opts:['نعم','لا'] }
+  ],
+  joint: [
+    { id:'trauma', q:'هل كان هناك إصابة أو سقوط مؤخراً؟ أو يعجز عن المشي؟', opts:['نعم','لا'] },
+    { id:'hot_joint', q:'هل المفصل ساخن، منتفخ، مؤلم جداً مع حمى؟', opts:['نعم','لا'] },
+    { id:'multiple', q:'هل الألم في مفاصل متعددة مع تصلح صباحي يدوم أكثر من ساعة؟', opts:['نعم','لا'] },
+    { id:'back_neuro', q:'هل مع ألم الظهر ضعف أو تنميل في الساقين؟', opts:['نعم','لا'] }
+  ],
+  limb: [
+    { id:'sudden', q:'هل بدأ الضعف أو التنميل فجأة (خلال دقائق أو ساعات)؟', opts:['نعم — فجأة','لا — تدريجي'] },
+    { id:'one_side', q:'هل يشمل جانباً كاملاً من الجسم أو الوجه؟', opts:['نعم','لا'] },
+    { id:'bladder', q:'هل مع الضعف احتباس بول أو سلس؟ (يشير لضغط على النخاع)', opts:['نعم','لا'] },
+    { id:'diabetic', q:'هل المريض مصاب بالسكري مع تنميل مزمن في القدمين والأصابع؟', opts:['نعم','لا'] }
+  ],
+  syncope: [
+    { id:'exertional', q:'هل حدث الإغماء أثناء المجهود أو مع خفقان وألم صدر؟', opts:['نعم','لا'] },
+    { id:'seizure', q:'هل صاحبه تشنج أو عضّ اللسان أو ارتباك طويل بعد الاستيقاظ؟', opts:['نعم','لا'] },
+    { id:'positional', q:'هل حدث عند الوقوف المفاجئ أو بعد إرهاق/جفاف واضح؟', opts:['نعم','لا'] },
+    { id:'pregnant_s', q:'هل المريضة حامل؟', opts:['نعم','لا'], cond:(a,g)=>g==='أنثى' }
+  ],
+  headache: [
+    { id:'thunderclap', q:'هل الصداع وصل ذروته خلال ثوانٍ؟ ("أسوأ صداع في حياتي")', opts:['نعم','لا'] },
+    { id:'fever_neck', q:'هل مع الصداع حمى وتصلب الرقبة أو اضطراب الوعي؟', opts:['نعم','لا'] },
+    { id:'eye_pain', q:'هل مع الصداع ألم في العين واحمرار وضبابية في الرؤية؟', opts:['نعم','لا'] },
+    { id:'progressive', q:'هل الصداع يتفاقم تدريجياً على أسابيع مع أعراض عصبية؟', opts:['نعم','لا'] }
+  ],
+  chest: [
+    { id:'crushing', q:'هل الألم ضاغط/عاصر في مركز الصدر مع تعرق وضيق تنفس؟', opts:['نعم','لا'] },
+    { id:'radiation', q:'هل يشع للذراع اليسرى أو الفك أو الكتف؟', opts:['نعم','لا'] },
+    { id:'pleuritic', q:'هل الألم حاد يزداد مع التنفس العميق أو السعال مع حمى؟', opts:['نعم','لا'] },
+    { id:'wall', q:'هل الألم يتكرر بالضغط على الصدر بالأصابع؟', opts:['نعم','لا'] }
+  ],
+  rash: [
+    { id:'mucosa', q:'هل الطفح مع تقرحات في الفم أو العين أو تقشر الجلد؟', opts:['نعم','لا'] },
+    { id:'spreading', q:'هل الطفح ينتشر بسرعة مع حمى عالية وألم شديد؟', opts:['نعم','لا'] },
+    { id:'purpura', q:'هل الطفح بقع بنفسجية/حمراء لا تختفي بالضغط عليها؟', opts:['نعم','لا'] },
+    { id:'drug', q:'هل بدأ الطفح بعد دواء جديد خلال الشهرين الماضيين؟', opts:['نعم','لا'] }
+  ],
+  neck: [
+    { id:'child_growth', q:'هل المريض طفل أو مراهق (أقل من 14 سنة) مع تأخر نمو أو بلوغ؟', opts:['نعم','لا'] },
+    { id:'airway', q:'هل التورم في الرقبة مع صعوبة في التنفس أو البلع أو صوت صرير؟', opts:['نعم','لا'] },
+    { id:'thyroid', q:'هل التورم في منتصف الرقبة ويتحرك عند البلع؟', opts:['نعم','لا'] }
+  ],
+  dm_htn: [
+    { id:'acute_organ', q:'هل مع السكري/الضغط: صداع شديد أو ألم صدر أو اضطراب وعي؟', opts:['نعم','لا'] },
+    { id:'pregnant_d', q:'هل المريضة حامل مع ارتفاع ضغط؟', opts:['نعم','لا'], cond:(a,g)=>g==='أنثى' },
+    { id:'foot_ulcer', q:'هل يوجد جرح أو تقرح أو تلون أسود في القدم؟', opts:['نعم','لا'] },
+    { id:'type1', q:'هل المريض سكري نوع أول أو سكره غير متحكم به رغم الإنسولين؟', opts:['نعم','لا'] }
+  ],
+  fatigue: [
+    { id:'weight_loss', q:'هل هناك نقص وزن غير مقصود مع حمى ليلية أو تعرق ليلي؟', opts:['نعم','لا'] },
+    { id:'mood', q:'هل مع الإرهاق حزن شديد وانعزال وفقدان الاهتمام بالحياة؟', opts:['نعم','لا'] },
+    { id:'thyroid_sx', q:'هل مع الإرهاق: تعصب للحرارة/البرد أو رعشة أو خفقان؟', opts:['نعم','لا'] }
+  ]
+};
+
+// ═══════════════════════════════════════════════
+//  ROUTING ENGINE
+// ═══════════════════════════════════════════════
+
+function computeResult(complaint, answers, vitals, gender, age) {
+  const a = answers;
+  const ag = parseInt(age) || 30;
+
+  // Check vitals red flags first
+  const hr = parseInt(vitals.hr) || 0;
+  const sbp = parseInt(vitals.sbp) || 0;
+  const temp = parseFloat(vitals.temp) || 0;
+  const o2 = parseInt(vitals.o2) || 100;
+
+  const vitalER = (hr > 120 || sbp < 90 || o2 < 90 || (sbp > 0 && sbp > 180 && complaint==='dm_htn'));
+  const vitalUrgent = (hr > 100 || (temp > 0 && temp > 38.5) || o2 < 94);
+
+  let specialty = '', level = 5, reason = '', erFlag = false;
+
+  switch(complaint) {
+    case 'abdominal':
+      if(a.age14==='نعم') { specialty='أطفال'; level=a.acute_abdomen==='نعم'?3:5; reason='مريض أطفال' }
+      else if(a.female_fertile==='نعم') { specialty='نسائية وتوليد'; level=2; reason='ألم حوضي في امرأة بسن الإنجاب — احتمال حمل خارج الرحم'; erFlag=true }
+      else if(a.acute_abdomen==='نعم') { specialty='جراحة عامة'; level=2; reason='بطن حاد — احتمال التهاب زائدة أو انثقاب' }
+      else if(a.location==='يمين أسفل (زائدة)') { specialty='جراحة عامة'; level=2; reason='ألم ربع أسفل يمين — احتمال التهاب الزائدة' }
+      else if(a.location==='يمين أعلى (كبد/مرارة)') { specialty='هضمية أو جراحة عامة'; level=3; reason='ألم ربع أعلى يمين — احتمال المرارة أو الكبد' }
+      else if(a.location==='خاصرة/ظهر') { specialty='داخلية عامة'; level=3; reason='ألم الخاصرة مع إشعاع — احتمال مغص كلوي' }
+      else if(a.chronic==='نعم') { specialty='هضمية'; level=4; reason='ألم بطن مزمن مرتبط بالهضم' }
+      else { specialty='داخلية عامة'; level=5; reason='ألم بطن غير محدد' }
+      break;
+
+    case 'joint':
+      if(a.trauma==='نعم') { specialty='عظمية'; level=3; reason='إصابة ميكانيكية أو عجز عن المشي' }
+      else if(a.hot_joint==='نعم') { specialty='عظمية — احتمال التهاب إنتاني'; level=2; reason='مفصل واحد ساخن منتفخ مع حمى — يُستبعد التهاب مفصلي إنتاني' }
+      else if(a.back_neuro==='نعم') { specialty='جراحة عصبية'; level=3; reason='ألم ظهر مع أعراض عصبية — احتمال ضغط على جذر عصبي' }
+      else if(a.multiple==='نعم') { specialty='روماتولوجي'; level=4; reason='ألم مفاصل متعددة مع تصلح صباحي — احتمال التهاب مفاصل روماتويدي' }
+      else { specialty='داخلية عامة'; level=5; reason='ألم مفاصل غير محدد' }
+      break;
+
+    case 'limb':
+      if(a.sudden==='نعم — فجأة' && a.one_side==='نعم') { specialty='إسعاف فوري'; level=1; erFlag=true; reason='سكتة دماغية محتملة — ضعف مفاجئ أحادي الجانب' }
+      else if(a.bladder==='نعم') { specialty='جراحة عصبية'; level=2; reason='ضغط على النخاع — متلازمة ذيل الفرس' }
+      else if(a.sudden==='نعم — فجأة') { specialty='داخلية عصبية'; level=3; reason='ضعف مفاجئ يحتاج تقييم عصبي عاجل' }
+      else if(a.diabetic==='نعم') { specialty='داخلية عامة'; level=4; reason='اعتلال أعصاب سكري مزمن' }
+      else { specialty='داخلية عصبية'; level=4; reason='ضعف أو تنميل يحتاج تقييم عصبي' }
+      break;
+
+    case 'syncope':
+      if(a.exertional==='نعم') { specialty='قلبية'; level=2; reason='إغماء مع مجهود أو خفقان — احتمال اضطراب نظم القلب' }
+      else if(a.seizure==='نعم') { specialty='داخلية عصبية'; level=3; reason='نوبة تشنجية محتملة — ليست إغماء بسيطاً' }
+      else if(a.pregnant_s==='نعم') { specialty='نسائية وتوليد'; level=2; reason='إغماء في الحامل يحتاج تقييم فوري' }
+      else if(a.positional==='نعم') { specialty='داخلية عامة'; level=5; reason='إغماء وضعي أو وعائي مبهمي' }
+      else { specialty='داخلية عامة'; level=4; reason='إغماء يحتاج تقييم سبب' }
+      break;
+
+    case 'headache':
+      if(a.thunderclap==='نعم') { specialty='إسعاف فوري'; level=1; erFlag=true; reason='صداع الرعدة — احتمال نزيف تحت العنكبوتية' }
+      else if(a.fever_neck==='نعم') { specialty='إسعاف فوري'; level=1; erFlag=true; reason='صداع مع حمى وتصلب رقبة — احتمال التهاب السحايا' }
+      else if(a.eye_pain==='نعم') { specialty='عيون'; level=2; reason='ألم العين مع ضبابية — احتمال زرق حاد' }
+      else if(a.progressive==='نعم') { specialty='جراحة عصبية'; level=3; reason='صداع تقدمي مع أعراض — يُستبعد ورم أو ضغط داخل القحف' }
+      else { specialty='داخلية عصبية'; level=5; reason='صداع مزمن — نمط شقيقة أو توتري' }
+      break;
+
+    case 'chest':
+      if(a.crushing==='نعم' || a.radiation==='نعم') { specialty='إسعاف فوري'; level=1; erFlag=true; reason='احتمال متلازمة الشريان التاجي الحادة' }
+      else if(a.pleuritic==='نعم') { specialty='داخلية عامة'; level=3; reason='ألم جنبي — احتمال الالتهاب الرئوي أو الجنب' }
+      else if(a.wall==='نعم') { specialty='داخلية عامة'; level=5; reason='ألم جدار الصدر العضلي الهيكلي' }
+      else { specialty='قلبية'; level=4; reason='ألم صدر يحتاج تقييم قلبي — نمط إقفاري مزمن' }
+      break;
+
+    case 'rash':
+      if(a.mucosa==='نعم') { specialty='إسعاف فوري'; level=1; erFlag=true; reason='احتمال متلازمة ستيفنز-جونسون — طارئ جلدي' }
+      else if(a.purpura==='نعم') { specialty='إسعاف فوري'; level=1; erFlag=true; reason='فرفرية — احتمال التهاب الأوعية أو التهاب السحايا المكورية' }
+      else if(a.spreading==='نعم') { specialty='داخلية عامة'; level=2; reason='طفح سريع الانتشار مع حمى — احتمال التهاب النسيج الخلوي' }
+      else if(a.drug==='نعم') { specialty='جلدية'; level=3; reason='طفح دوائي محتمل يحتاج تقييم' }
+      else { specialty='جلدية'; level=5; reason='طفح جلدي موضعي مزمن' }
+      break;
+
+    case 'neck':
+      if(a.airway==='نعم') { specialty='إسعاف فوري'; level=1; erFlag=true; reason='تورم رقبة مع ضيق مجرى الهواء — طارئ' }
+      else if(a.child_growth==='نعم') { specialty='غدد أطفال'; level=4; reason='اضطراب نمو أو بلوغ في طفل' }
+      else if(a.thyroid==='نعم') { specialty='غدة صماء'; level=4; reason='تورم درقي مزمن' }
+      else { specialty='أنف وأذن وحنجرة'; level=3; reason='تورم رقبة جانبي يحتاج تقييم' }
+      break;
+
+    case 'dm_htn':
+      if(a.acute_organ==='نعم') { specialty='إسعاف فوري'; level=1; erFlag=true; reason='طارئة ضغط أو سكري مع تأثر الأعضاء' }
+      else if(a.pregnant_d==='نعم') { specialty='نسائية وتوليد'; level=2; reason='احتمال تسمم الحمل — ارتفاع ضغط في الحامل' }
+      else if(a.foot_ulcer==='نعم') { specialty='جراحة عامة'; level=2; reason='قدم سكرية مصابة — خطر البتر' }
+      else if(a.type1==='نعم') { specialty='غدة صماء'; level=4; reason='سكري نوع أول أو غير متحكم به' }
+      else { specialty='داخلية عامة'; level=5; reason='متابعة روتينية لمزمن' }
+      break;
+
+    case 'fatigue':
+      if(a.weight_loss==='نعم') { specialty='داخلية عامة'; level=3; reason='نقص وزن غير مبرر مع حمى — يُستبعد ورم أو سل' }
+      else if(a.mood==='نعم') { specialty='نفسية'; level=4; reason='إرهاق مع أعراض اكتئابية' }
+      else if(a.thyroid_sx==='نعم') { specialty='غدة صماء'; level=4; reason='أعراض درقية — اضطراب الغدة الدرقية' }
+      else { specialty='داخلية عامة'; level=5; reason='إرهاق مزمن يحتاج تقييم' }
+      break;
+  }
+
+  // Vitals override
+  if(vitals.hr || vitals.sbp || vitals.o2) {
+    if(vitalER && level > 1) { level=1; erFlag=true; specialty='إسعاف فوري'; reason += ' — علامات حيوية حرجة' }
+    else if(vitalUrgent && level > 2) { level = Math.min(level, 2); reason += ' — علامات حيوية مقلقة' }
+  }
+
+  const LEVEL_INFO = {
+    1: { label:'إسعاف فوري', wait:'فوري — لا ينتظر', cls:'er', badge:'badge-er', stripe:'stripe-er', btext:'تحويل للإسعاف' },
+    2: { label:'حرج', wait:'يُرى خلال 15 دقيقة', cls:'p2', badge:'badge-p2', stripe:'stripe-p2', btext:'حرج' },
+    3: { label:'عاجل', wait:'يُرى خلال 60 دقيقة', cls:'p3', badge:'badge-p3', stripe:'stripe-p3', btext:'عاجل' },
+    4: { label:'متوسط', wait:'يُرى خلال ساعتين', cls:'p4', badge:'badge-p4', stripe:'stripe-p4', btext:'متوسط' },
+    5: { label:'روتيني', wait:'نفس اليوم', cls:'p5', badge:'badge-p5', stripe:'stripe-p5', btext:'روتيني' }
+  };
+
+  return { specialty, level, reason, erFlag, info: LEVEL_INFO[level] };
+}
+
+// ═══════════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════════
+
+let state = {
+  step: 1,
+  complaint: null,
+  answers: {},
+  currentQ: 0,
+  filteredQs: [],
+  vitalsOpen: false,
+  result: null,
+  pName:'', pAge:'', pGender:'', pPhone:''
+};
+
+let patients = [];
+let counter = 0;
+let activeFilter = 'all';
+
+// ═══════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════
+
+function updateClock(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit',hour12:false});
+}
+setInterval(updateClock,1000); updateClock();
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════
+
+const stepMeta = [
+  {title:'بيانات المريض', sub:'أدخل المعلومات الأساسية'},
+  {title:'الشكوى الرئيسية', sub:'اختر العرض الأقرب لحالة المريض'},
+  {title:'أسئلة التقييم', sub:'الإجابات تحدد التخصص والأولوية تلقائياً'},
+  {title:'النتيجة والتسجيل', sub:'مراجعة القرار وتسجيل المريض'}
+];
+
+function setStep(s) {
+  state.step = s;
+  for(let i=1;i<=4;i++){
+    document.getElementById('step'+i).classList.toggle('active',i===s);
+    const sd=document.getElementById('sd'+i);
+    if(i<s){sd.className='step-dot done';sd.textContent='✓'}
+    else if(i===s){sd.className='step-dot active';sd.textContent=''+i}
+    else{sd.className='step-dot';sd.textContent=''+i}
+    if(i<4){document.getElementById('sl'+i).classList.toggle('done',i<s)}
+  }
+  document.getElementById('stepTitle').textContent=stepMeta[s-1].title;
+  document.getElementById('stepSub').textContent=stepMeta[s-1].sub;
+  document.getElementById('btnBack').style.display=s>1?'block':'none';
+
+  const btn=document.getElementById('btnNext');
+  if(s===4 && state.result){
+    if(state.result.level===1){
+      btn.className='btn btn-er'; btn.textContent='🚨 تحويل للإسعاف'
+    } else {
+      btn.className='btn btn-confirm'; btn.textContent='✓ تسجيل المريض'
+    }
+  } else {
+    btn.className='btn btn-primary'; btn.textContent='التالي ←'
+  }
+}
+
+function goNext() {
+  if(state.step===1) {
+    const name=document.getElementById('pName').value.trim();
+    const age=document.getElementById('pAge').value;
+    const gender=document.getElementById('pGender').value;
+    if(!name){showToast('⚠️ الرجاء إدخال اسم المريض','t-err');return}
+    if(!age){showToast('⚠️ الرجاء إدخال العمر','t-err');return}
+    if(!gender){showToast('⚠️ الرجاء تحديد الجنس','t-err');return}
+    state.pName=name; state.pAge=age; state.pGender=gender;
+    state.pPhone=document.getElementById('pPhone').value;
+    setStep(2);
+  } else if(state.step===2) {
+    if(!state.complaint){showToast('⚠️ الرجاء اختيار الشكوى الرئيسية','t-err');return}
+    buildQuestions();
+    setStep(3);
+    renderQuestion();
+  } else if(state.step===3) {
+    // handled by question selection
+    showToast('⚠️ الرجاء الإجابة على السؤال الحالي','t-err');
+  } else if(state.step===4) {
+    registerPatient();
+  }
+}
+
+function goBack() {
+  if(state.step===2){state.complaint=null;document.querySelectorAll('.sym-btn').forEach(b=>b.classList.remove('selected'));setStep(1)}
+  else if(state.step===3){state.answers={};state.currentQ=0;setStep(2)}
+  else if(state.step===4){state.answers={};state.currentQ=0;buildQuestions();setStep(3);renderQuestion()}
+}
+
+// ═══════════════════════════════════════════════
+//  SYMPTOM SELECTION
+// ═══════════════════════════════════════════════
+
+function selectSymptom(c, el) {
+  document.querySelectorAll('.sym-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.complaint = c;
+}
+
+// ═══════════════════════════════════════════════
+//  QUESTIONS ENGINE
+// ═══════════════════════════════════════════════
+
+function buildQuestions() {
+  const all = QUESTIONS[state.complaint] || [];
+  state.filteredQs = all.filter(q => !q.cond || q.cond(state.answers, state.pGender));
+  state.currentQ = 0;
+  state.answers = {};
+}
+
+function renderQuestion() {
+  const qs = state.filteredQs;
+  const idx = state.currentQ;
+
+  // Progress dots
+  const prog = document.getElementById('qProgress');
+  prog.innerHTML = qs.map((_,i)=>`<div class="q-prog-dot ${i<idx?'done':i===idx?'active':''}"></div>`).join('');
+
+  if(idx >= qs.length) {
+    computeFinalResult();
+    return;
+  }
+
+  const q = qs[idx];
+  document.getElementById('qText').textContent = q.q;
+  const opts = document.getElementById('qOptions');
+  opts.innerHTML = q.opts.map(o=>
+    `<div class="q-opt" onclick="answerQ('${q.id}','${o}',this)">${o}</div>`
+  ).join('');
+
+  document.getElementById('btnNext').style.display='none';
+}
+
+function answerQ(qid, val, el) {
+  document.querySelectorAll('.q-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  state.answers[qid] = val;
+
+  setTimeout(() => {
+    state.currentQ++;
+    // Check if we can short-circuit (ER detected early)
+    const earlyResult = checkEarlyER();
+    if(earlyResult) {
+      state.currentQ = state.filteredQs.length; // skip remaining
+    }
+    if(state.currentQ >= state.filteredQs.length) {
+      computeFinalResult();
+    } else {
+      renderQuestion();
+    }
+  }, 350);
+}
+
+function checkEarlyER() {
+  const a = state.answers;
+  const c = state.complaint;
+  if(c==='limb' && a.sudden==='نعم — فجأة' && a.one_side==='نعم') return true;
+  if(c==='headache' && (a.thunderclap==='نعم' || a.fever_neck==='نعم')) return true;
+  if(c==='chest' && (a.crushing==='نعم' || a.radiation==='نعم')) return true;
+  if(c==='rash' && (a.mucosa==='نعم' || a.purpura==='نعم')) return true;
+  if(c==='dm_htn' && a.acute_organ==='نعم') return true;
+  return false;
+}
+
+function computeFinalResult() {
+  const vitals = {
+    hr: document.getElementById('vHR').value,
+    sbp: document.getElementById('vSBP').value,
+    temp: document.getElementById('vTemp').value,
+    o2: document.getElementById('vO2').value
+  };
+  state.result = computeResult(state.complaint, state.answers, vitals, state.pGender, state.pAge);
+  renderResult();
+  setStep(4);
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER RESULT
+// ═══════════════════════════════════════════════
+
+function renderResult() {
+  const r = state.result;
+  const area = document.getElementById('resultArea');
+
+  let html = `
+    <div class="result-card ${r.info.cls}">
+      <div class="result-level">${r.info.label} — ${r.info.wait}</div>
+      <div class="result-specialty">🏥 ${r.specialty}</div>
+      <div class="result-reason">📋 ${r.reason}</div>
+    </div>
+  `;
+
+  if(r.erFlag) {
+    html += `
+      <div class="er-warning">
+        <span style="font-size:22px;flex-shrink:0">🚨</span>
+        <div class="er-warning-text">هذه الحالة تحتاج إسعاف فوري — لا تُسجَّل في قائمة انتظار العيادة. يرجى توجيه المريض للطوارئ الآن.</div>
+      </div>
+    `;
+  }
+
+  area.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+//  VITALS TOGGLE
+// ═══════════════════════════════════════════════
+
+function toggleVitals() {
+  state.vitalsOpen = !state.vitalsOpen;
+  document.getElementById('vtCheck').classList.toggle('on', state.vitalsOpen);
+  document.getElementById('vitalsFields').classList.toggle('open', state.vitalsOpen);
+}
+
+// ═══════════════════════════════════════════════
+//  REGISTER PATIENT
+// ═══════════════════════════════════════════════
+
+function registerPatient() {
+  const r = state.result;
+  if(!r) return;
+
+  if(r.level===1) {
+    showToast('🚨 تم تحويل المريض للإسعاف','t-warn');
+    counter++;
+    patients.unshift({
+      id:Date.now(), number:counter,
+      name:state.pName, age:state.pAge, gender:state.pGender,
+      specialty:r.specialty, level:r.level, reason:r.reason,
+      info:r.info, erFlag:true, status:'waiting',
+      registeredAt:Date.now()
+    });
+    renderQueue(); updateStats(); resetForm();
+    return;
+  }
+
+  counter++;
+  const p = {
+    id:Date.now(), number:counter,
+    name:state.pName, age:state.pAge, gender:state.pGender,
+    specialty:r.specialty, level:r.level, reason:r.reason,
+    info:r.info, erFlag:false, status:'waiting',
+    registeredAt:Date.now()
+  };
+
+  // Insert by priority
+  const idx = patients.findIndex(x => x.status==='waiting' && x.level > p.level);
+  if(idx===-1) patients.push(p); else patients.splice(idx,0,p);
+
+  renderQueue(); updateStats();
+  showToast(`✅ تم تسجيل ${p.name} — ${p.specialty} — ${p.info.label}`,'t-ok');
+  resetForm();
+}
+
+function resetForm() {
+  document.getElementById('pName').value='';
+  document.getElementById('pAge').value='';
+  document.getElementById('pGender').value='';
+  document.getElementById('pPhone').value='';
+  document.getElementById('vHR').value='';
+  document.getElementById('vSBP').value='';
+  document.getElementById('vTemp').value='';
+  document.getElementById('vO2').value='';
+  document.getElementById('resultArea').innerHTML='';
+  document.getElementById('vtCheck').classList.remove('on');
+  document.getElementById('vitalsFields').classList.remove('open');
+  state={step:1,complaint:null,answers:{},currentQ:0,filteredQs:[],vitalsOpen:false,result:null,pName:'',pAge:'',pGender:'',pPhone:''};
+  document.querySelectorAll('.sym-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('btnNext').style.display='';
+  setStep(1);
+}
+
+// ═══════════════════════════════════════════════
+//  QUEUE RENDER
+// ═══════════════════════════════════════════════
+
+function setFilter(f, el) {
+  activeFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderQueue();
+}
+
+function formatWait(ts) {
+  const m=Math.floor((Date.now()-ts)/60000);
+  if(m<1)return'الآن';
+  if(m<60)return m+'د';
+  return Math.floor(m/60)+'س '+(m%60)+'د';
+}
+
+function callPatient(id) {
+  const p=patients.find(x=>x.id===id);
+  if(!p)return;
+  document.getElementById('cpName').textContent=p.name;
+  document.getElementById('cpSpecialty').textContent=p.specialty;
+  document.getElementById('cpNum').textContent='#'+p.number;
+  const pop=document.getElementById('calledPopup');
+  pop.classList.add('show');
+  setTimeout(()=>pop.classList.remove('show'),5000);
+  showToast('📢 تم استدعاء '+p.name+' — '+p.specialty);
+}
+
+function markDone(id) {
+  const p=patients.find(x=>x.id===id);
+  if(!p)return;
+  p.status='done';
+  renderQueue(); updateStats();
+  showToast('✅ انتهى كشف '+p.name,'t-ok');
+}
+
+function undoDone(id) {
+  const p=patients.find(x=>x.id===id);
+  if(!p)return;
+  p.status='waiting';
+  renderQueue(); updateStats();
+}
+
+function renderQueue() {
+  const list=document.getElementById('queue');
+  const empty=document.getElementById('emptyState');
+
+  let filtered=patients;
+  if(activeFilter==='done') filtered=patients.filter(p=>p.status==='done');
+  else if(activeFilter!=='all') filtered=patients.filter(p=>p.status==='waiting'&&p.info.cls===activeFilter);
+
+  document.getElementById('totalCount').textContent = patients.filter(p=>p.status==='waiting').length + ' في الانتظار';
+
+  if(filtered.length===0){
+    list.innerHTML='';
+    list.appendChild(empty);
+    return;
+  }
+  empty.style.display='none';
+
+  list.innerHTML = filtered.map(p=>{
+    const done=p.status==='done';
+    const stripeClass = done ? 'stripe-done' : 'stripe-'+p.info.cls;
+    const badgeClass = done ? 'badge-done' : p.info.badge;
+    return `
+      <div class="p-card ${done?'done-card':''}">
+        <div class="p-stripe ${stripeClass}"></div>
+        <div class="p-body">
+          <div class="p-top">
+            <div class="p-num">#${p.number}</div>
+            <div class="p-name">${p.name}</div>
+            <div class="p-badge ${badgeClass}">${done?'✅ انتهى':p.info.btext}</div>
+            ${p.erFlag&&!done?'<div class="p-badge badge-er">🚨 إسعاف</div>':''}
+          </div>
+          <div class="p-specialty">${p.specialty}</div>
+          <div class="p-meta">
+            <span class="meta-tag">${p.age} سنة</span>
+            <span class="meta-tag">${p.gender}</span>
+            <span class="complaint-tag">⏱ ${p.info.wait}</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5">📋 ${p.reason}</div>
+        </div>
+        <div class="p-actions">
+          <div class="wait-display"><span>انتظر</span>${formatWait(p.registeredAt)}</div>
+          ${!done?`
+            <button class="act-btn btn-call" onclick="callPatient(${p.id})">📢 استدعاء</button>
+            <button class="act-btn btn-done" onclick="markDone(${p.id})">✓ انتهى</button>
+          `:`<button class="act-btn btn-undo" onclick="undoDone(${p.id})">↩ تراجع</button>`}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateStats() {
+  const w=patients.filter(p=>p.status==='waiting');
+  const counts={er:0,p2:0,p3:0,p4:0,p5:0};
+  w.forEach(p=>{
+    if(p.level===1)counts.er++;
+    else if(p.level===2)counts.p2++;
+    else if(p.level===3)counts.p3++;
+    else if(p.level===4)counts.p4++;
+    else counts.p5++;
+  });
+  document.getElementById('nER').textContent=counts.er;
+  document.getElementById('nP2').textContent=counts.p2;
+  document.getElementById('nP3').textContent=counts.p3;
+  document.getElementById('nP4').textContent=counts.p4;
+  document.getElementById('nP5').textContent=counts.p5;
+  ['er','p2','p3','p4','p5'].forEach(k=>{
+    document.getElementById('box'+k.toUpperCase()).classList.toggle('has-data',counts[k]>0)
+  });
+  const hasER=counts.er>0||counts.p2>0;
+  const banner=document.getElementById('critBanner');
+  banner.classList.toggle('show',hasER);
+  if(hasER){
+    const total=counts.er+counts.p2;
+    document.getElementById('critText').textContent=`🚨 يوجد ${total} حالة حرجة في الانتظار — يرجى الاستجابة الفورية`;
+  }
+}
+
+// TOAST
+function showToast(msg,cls=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+(cls?cls:'')+' show';
+  setTimeout(()=>t.className='toast '+(cls?cls:''),3000);
+}
+
+// Auto-refresh wait times
+setInterval(()=>{if(patients.length)renderQueue()},30000);
+
+// Init
+setStep(1);
+</script>
+</body>
+</html>
